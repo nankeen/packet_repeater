@@ -140,6 +140,7 @@ func broadcastRoutine(ctx context.Context, errc chan error, pktc chan wrapper.Pa
 		select {
 		case pkt := <-pktc:
 			fmt.Printf("Broadcasting: %+v\n", pkt)
+			wrapper.SendPacket(pkt)
 		case <-ctx.Done():
 			errc <- nil
 			return

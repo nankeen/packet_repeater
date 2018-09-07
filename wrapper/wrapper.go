@@ -353,7 +353,9 @@ func packetFromCPacket(cPacket C.struct_lgw_pkt_rx_s) Packet {
 
 func Receive() ([]Packet, error) {
 	var packets [NbMaxPackets]C.struct_lgw_pkt_rx_s
+	concentratorMutex.Lock()
 	nbPackets := C.lgw_receive(NbMaxPackets, &packets[0])
+	concentratorMutex.Unlock()
 	if nbPackets == C.LGW_HAL_ERROR {
 		return nil, errors.New("Failed packet fetch from the concentrator")
 	}
@@ -380,7 +382,7 @@ func insertPayload(pkt Packet, txPkt *C.struct_lgw_pkt_tx_s) error {
 	return nil
 }
 
-func SendDownlink(pkt Packet) error {
+func SendPacket(pkt Packet) error {
 	var txPacket = C.struct_lgw_pkt_tx_s{
 		freq_hz:    C.uint32_t(pkt.Freq),
 		rf_chain:   C.uint8_t(pkt.RFChain),
@@ -401,10 +403,10 @@ func SendDownlink(pkt Packet) error {
 		return err
 	}
 
-	return sendDownlinkConcentrator(txPacket)
+	return sendPacketConcentrator(txPacket)
 }
 
-func sendDownlinkConcentrator(txPacket C.struct_lgw_pkt_tx_s) error {
+func sendPacketConcentrator(txPacket C.struct_lgw_pkt_tx_s) error {
 	for {
 		var txStatus C.uint8_t
 		concentratorMutex.Lock()
