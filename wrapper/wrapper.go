@@ -371,11 +371,11 @@ func Receive() ([]Packet, error) {
 func insertPayload(pkt Packet, txPkt *C.struct_lgw_pkt_tx_s) error {
 	payload := pkt.Payload
 	if len(payload) > 256 {
-		return erros.New("Payload too big to transmit")
+		return errors.New("Payload too big to transmit")
 	}
-	txPacket.size = C.uint16_t(len(payload))
+	txPkt.size = C.uint16_t(len(payload))
 	for i := 0; i < len(payload); i++ {
-		txPacket.payload[i] = C.uint8_t(payload[i])
+		txPkt.payload[i] = C.uint8_t(payload[i])
 	}
 	return nil
 }
