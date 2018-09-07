@@ -384,18 +384,20 @@ func insertPayload(pkt Packet, txPkt *C.struct_lgw_pkt_tx_s) error {
 
 func SendPacket(pkt Packet) error {
 	var txPacket = C.struct_lgw_pkt_tx_s{
-		freq_hz:    C.uint32_t(pkt.Freq),
-		rf_chain:   C.uint8_t(pkt.RFChain),
-		no_crc:     C.bool(false),
-		no_header:  C.bool(false),
-		payload:    [256]C.uint8_t{},
-		tx_mode:    C.TIMESTAMPED,
-		count_us:   C.uint32_t(pkt.CountUS),
-		bandwidth:  C.uint8_t(pkt.Bandwidth),
-		datarate:   C.uint32_t(pkt.Datarate),
-		coderate:   C.uint8_t(pkt.Coderate),
+		freq_hz: C.uint32_t(pkt.Freq),
+		// rf_chain:   C.uint8_t(pkt.RFChain),
+		no_crc:    C.bool(false),
+		no_header: C.bool(false),
+		payload:   [256]C.uint8_t{},
+		tx_mode:   C.IMMEDIATE,
+		count_us:  C.uint32_t(pkt.CountUS),
+		bandwidth: C.uint8_t(pkt.Bandwidth),
+		datarate:  C.uint32_t(pkt.Datarate),
+		// datarate:   C.DR_LORA_SF9,
+		coderate: C.uint8_t(pkt.Coderate),
+		// coderate:   C.CR_LORA_4_5,
 		rf_power:   14,
-		modulation: C.MOD_LORA,
+		modulation: C.uint8_t(pkt.Modulation),
 	}
 
 	// Inserting payload

@@ -139,8 +139,10 @@ func broadcastRoutine(ctx context.Context, errc chan error, pktc chan wrapper.Pa
 	for {
 		select {
 		case pkt := <-pktc:
-			fmt.Printf("Broadcasting: %+v\n", pkt)
-			wrapper.SendPacket(pkt)
+			if err := wrapper.SendPacket(pkt); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+			fmt.Println("Broadcasted packet!")
 		case <-ctx.Done():
 			errc <- nil
 			return
