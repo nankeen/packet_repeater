@@ -57,6 +57,7 @@ func main() {
 		fmt.Println(os.Stderr, err)
 		return
 	}
+	defer wrapper.StopLoRaGateway()
 	fmt.Println("LoRa gateway started successfully")
 
 	// TODO Spawn uplink handler Go routines
@@ -142,7 +143,6 @@ func broadcastRoutine(ctx context.Context, errc chan error, pktc chan wrapper.Pa
 			if err := wrapper.SendPacket(pkt); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
-			fmt.Println("Broadcasted packet!")
 		case <-ctx.Done():
 			errc <- nil
 			return
