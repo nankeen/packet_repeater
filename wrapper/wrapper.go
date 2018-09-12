@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 )
 
 const NbMaxPackets = 8
@@ -435,5 +436,28 @@ func sendPacketConcentrator(txPacket C.struct_lgw_pkt_tx_s) error {
 		return errors.New("Downlink transmission to the concentrator failed")
 	}
 
+	return nil
+}
+
+func WaitForConcentrator() error {
+	for {
+		var txStatus C.uint8_t
+		concentratorMutex.Lock()
+		var result = C.lgw_status(C.TX_STATUS, &txStatus)
+		concentratorMutex.Unlock()
+		if result == C.LGW_HAL_ERROR {
+			fmt.Fprintln(os.Stderr, "Couldn't get concentrator status")
+		} else if txStatus == C.TX_OFF {
+			// XX: Should we stop emission (like in the legacy packet forwarder) or retry?
+			// If we retry, we might overwrite a normally scheduled downlink, that might
+			// then not be relayed by the concentrator...
+			return errors.New("Concentrator is off")
+		} else if txStatus == C.TX_STATUS_UNKNOWN {
+			return errors.New("Concentrator status unknown")
+		} else if txStatus == C.TX_FREE {
+			break
+		}
+		time.Sleep(100 * time.Microsecond)
+	}
 	return nil
 }

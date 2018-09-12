@@ -6,6 +6,7 @@ import (
 	"github.com/NaNkeen/packet_repeater/wrapper"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -76,7 +77,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	case sig := <-sigc:
-		fmt.Fprintf(os.Stderr, "[!] Signal %s", sig.String())
+		fmt.Fprintf(os.Stderr, "[!] Signal %s\n", sig.String())
 	}
 }
 
@@ -137,17 +138,46 @@ func uplinkRoutine(ctx context.Context, errc chan error, pktc chan wrapper.Packe
 
 func broadcastRoutine(ctx context.Context, errc chan error, pktc chan wrapper.Packet) {
 	fmt.Println("Waiting to repeat")
+	crc_stack := make([]uint16, 0, 16)
+	lock := &sync.Mutex{}
+	go sliceTimeout(lock, &crc_stack)
 	for {
 		select {
 		case pkt := <-pktc:
+			fmt.Println(crc_stack)
+			lock.Lock()
+			duplicate := false
+			for _, crc := range crc_stack {
+				if pkt.CRC == crc {
+					duplicate = true
+					break
+				}
+			}
+			if duplicate {
+				lock.Unlock()
+				continue
+			}
 			if err := wrapper.SendPacket(pkt); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
+			wrapper.WaitForConcentrator()
+			crc_stack = append(crc_stack, pkt.CRC)
+			fmt.Printf("Repeated: %+v\n", pkt)
+			lock.Unlock()
 		case <-ctx.Done():
 			errc <- nil
 			return
 		default:
 			continue
 		}
+	}
+}
+
+func sliceTimeout(lock *sync.Mutex, slice *[]uint16) {
+	for {
+		time.Sleep(5 * time.Second)
+		lock.Lock()
+		*slice = (*slice)[:0]
+		lock.Unlock()
 	}
 }
