@@ -141,21 +141,17 @@ func broadcastRoutine(ctx context.Context, errc chan error, pktc chan wrapper.Pa
 	crc_stack := make([]uint16, 0, 16)
 	lock := &sync.Mutex{}
 	go sliceTimeout(lock, &crc_stack)
+OUTER:
 	for {
 		select {
 		case pkt := <-pktc:
 			fmt.Println(crc_stack)
 			lock.Lock()
-			duplicate := false
 			for _, crc := range crc_stack {
 				if pkt.CRC == crc {
-					duplicate = true
-					break
+					lock.Unlock()
+					continue OUTER
 				}
-			}
-			if duplicate {
-				lock.Unlock()
-				continue
 			}
 			if err := wrapper.SendPacket(pkt); err != nil {
 				fmt.Fprintln(os.Stderr, err)
